@@ -1,4 +1,6 @@
-from config import get_server_data, RADIUS
+import threading
+
+from config import get_server_data, RADIUS, WIDTH_ROOM, HEIGHT_ROOM
 
 import socket
 import pygame
@@ -45,10 +47,10 @@ def get_ready_socket_with_name() -> tuple[socket.socket | None, str]:
 
 
 class Grid:
-    def __init__(self, screen_):
-        self.screen = screen_
-        self.x = 700
-        self.y = 700
+    def __init__(self, screen: pygame.Surface, width, height):
+        self.screen = screen
+        self.x = width
+        self.y = height
         self.start_size = 200
         self.size = self.start_size
 
@@ -58,6 +60,18 @@ class Grid:
 
     def draw(self, background: pygame.image):
         self.screen.blit(background, (0, 0))
+
+    def fill(self, color: tuple[int, int, int]):
+        self.screen.fill(color)
+
+    def show_messages(self, talk):
+        for num_phrase, phrase in enumerate(talk[-10:]):
+            black = (0, 0, 0)
+            white = (255, 255, 255)
+            font_obj = pygame.font.Font('freesansbold.ttf', 20)
+            text_surface_obj = font_obj.render(phrase, True, black, white)
+
+            self.screen.blit(text_surface_obj, (WIDTH_ROOM + 40, num_phrase * 20))
 
 
 def write_name(screen, x, y, r, name):
@@ -80,25 +94,34 @@ def draw_players(screen, data_, colour: tuple[int, int, int]):
 
 
 def main():
+    talk: list[str] = []
+    message: str = ""
     my_socket, my_name = get_ready_socket_with_name()
     if not my_socket:
         return 0
-    width_window, height_window = 700, 700
+    width_window, height_window = WIDTH_ROOM + 400, HEIGHT_ROOM
     colour = (255, 255, 100)
     background = pygame.image.load("Game_package/background.png")
     missing_table = -1
-    # talks: list[str] = []
-    # message: str = ""
+
     table_number: int = missing_table
     desired_table_number: int = 0
 
     pygame.init()
     screen = pygame.display.set_mode((width_window, height_window))
     pygame.display.set_caption('Cocktail party')
-    grid = Grid(screen)
+    grid = Grid(screen, width_window, height_window)
+
+    def input_from_console():
+        nonlocal talk, message
+        while True:
+            message = input()
+            if message and table_number == desired_table_number and message_forming:
+                talk.append(message)
+
+    threading.Thread(target=input_from_console).start()
 
     message_forming = False
-
     running = True
     while running:
         for event in pygame.event.get():
@@ -127,12 +150,19 @@ def main():
         data = data.split(',')
 
         if data != ['']:
+            silver = (192, 192, 192)
+            grid.fill(silver)
             grid.draw(background)
             draw_players(screen, data[:-1], colour)
+            grid.show_messages(talk)
+
             table_number = int(data[-1])
-            if table_number == desired_table_number and table_number != 0 and not message_forming:
-                message_forming = True
-                print(f"You come to table {table_number} and you can talk")
+            if table_number == desired_table_number and table_number != 0:
+                if not message_forming:
+                    message_forming = True
+                    print(f"You come to table {table_number} and you can talk")
+            else:
+                message_forming = False
 
         pygame.display.update()
 
