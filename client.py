@@ -4,6 +4,7 @@ from config import get_server_data, RADIUS, WIDTH_ROOM, HEIGHT_ROOM
 
 import socket
 import pygame
+from pickle import dumps, loads
 
 
 def find(s) -> str:
@@ -41,7 +42,7 @@ def get_ready_socket_with_name() -> tuple[socket.socket | None, str]:
         exit()
 
     # confirm connection
-    sock.send('!'.encode())
+    sock.send(dumps({"!": True}))
 
     return sock, name
 
@@ -96,6 +97,7 @@ def draw_players(screen, data_, colour: tuple[int, int, int]):
 def main():
     talk: list[str] = []
     message: str = ""
+    unsent_message: str = ""
     my_socket, my_name = get_ready_socket_with_name()
     if not my_socket:
         return 0
@@ -113,11 +115,12 @@ def main():
     grid = Grid(screen, width_window, height_window)
 
     def input_from_console():
-        nonlocal talk, message
+        nonlocal talk, message, unsent_message
         while True:
             message = input()
             if message and table_number == desired_table_number and message_forming:
                 talk.append(message)
+                unsent_message = message
 
     threading.Thread(target=input_from_console).start()
 
@@ -133,22 +136,26 @@ def main():
                         desired_table_number = i
                         break
 
+        message_to_server = {"unsent_message": "",
+                             "desired_table_number": desired_table_number}
+        if unsent_message and message_forming:
+            message_to_server["unsent_message"] = unsent_message
+            unsent_message = ""
+
         if table_number != desired_table_number:
             message_forming = False
             table_number = missing_table
-            message = '<' + str(desired_table_number) + '>'
-            my_socket.send(message.encode())
+        my_socket.send(dumps(message_to_server))
+        message_to_server["unsent_message"] = ""
 
         # getting new game state
         try:
-            data = my_socket.recv(2 ** 15)
+            data = loads(my_socket.recv(2 ** 15))
         except (Exception,):
             running = False
             continue
-        data = data.decode()
         data = find(data)
         data = data.split(',')
-
         if data != ['']:
             silver = (192, 192, 192)
             grid.fill(silver)

@@ -3,6 +3,7 @@ from config import *
 import socket
 import time
 from random import randint
+from pickle import loads, dumps
 
 from Game_package import Table, Place
 from Game_package import get_not_taken_name, free_name
@@ -90,7 +91,6 @@ def find(s):
 
 
 def main():
-
     ready_socket = get_ready_socket()
 
     players: list[Player | Bot] = []
@@ -123,20 +123,22 @@ def main():
                 pass
         # receiving messages from all players
         for player in players:
-            if isinstance(player, Player):
+            if type(player) == Player:
                 try:
-                    data = player.conn.recv(1024)
-                    data = data.decode()
-
-                    if data[0] == '!':  # confirm connection
+                    data: dict = loads(player.conn.recv(1024))
+                    if "!" in data:  # confirm connection
                         player.ready = True
-                    else:  # getting desired table number
-                        desired_table_number = find(data)[0]
-                        if tables[desired_table_number].are_empty_places():
-                            player.desired_table_number = desired_table_number
+                    else:  # getting desired table number and new phrase
+                        if data.get("desired_table_number") != player.desired_table_number:
+                            desired_table_number = data.get("desired_table_number")
+                            if tables[desired_table_number].are_empty_places():
+                                player.desired_table_number = desired_table_number
+                        if data.get("unsent_message"):
+                            unsent_message = data.get("unsent_message")
+                            print(unsent_message)
                 except (Exception,):
                     pass
-            elif isinstance(player, Bot):
+            elif type(player) == Bot:
                 desired_table_number = find(player.send_command())[0]
                 if tables[desired_table_number].are_empty_places():
                     player.desired_table_number = desired_table_number
@@ -146,13 +148,13 @@ def main():
 
         # sending new game state
         for i in range(len(players)):
-            if isinstance(players[i], Player) and players[i].ready:
+            if type(players[i]) == Player and players[i].ready:
                 try:
-                    players[i].conn.send(('<' + answer + ',' + str(players[i].table_number) + '>').encode())
+                    players[i].conn.send(dumps('<' + answer + ',' + str(players[i].table_number) + '>'))
                     players[i].errors = 0
                 except (Exception,):
                     players[i].errors += 1
-            elif isinstance(players[i], Bot):
+            elif type(players[i]) == Bot:
                 players[i].get_game_state([player.table_number for player in players])
 
         # clearing the list of disconnected clients
