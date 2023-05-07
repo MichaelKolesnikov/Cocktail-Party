@@ -105,6 +105,7 @@ def main():
     while server_works:
         tick += 1
         time.sleep(1 / FPS)
+        # bringing in new players
         if tick == 200:
             tick = 0
             try:
@@ -116,8 +117,8 @@ def main():
                                     randint(0, WIDTH_ROOM),
                                     randint(0, HEIGHT_ROOM),
                                     get_not_taken_name())
-                new_socket.send(('.' + new_player.name + '.').encode())
-                new_socket.send('!'.encode())
+                new_socket.send(dumps(new_player.name))
+                new_socket.send(dumps('!'))
                 players.append(new_player)
             except (Exception,):
                 pass
@@ -135,7 +136,7 @@ def main():
                                 player.desired_table_number = desired_table_number
                         if data.get("unsent_message"):
                             unsent_message = data.get("unsent_message")
-                            print(unsent_message)
+                            player.unsent_message = unsent_message
                 except (Exception,):
                     pass
             elif type(player) == Bot:
@@ -144,13 +145,14 @@ def main():
                     player.desired_table_number = desired_table_number
             update(player)
 
-        answer = (','.join([f"{players[i].x} {players[i].y} {players[i].name}" for i in range(len(players))]))
-
         # sending new game state
+        pickle_able_players = [player.pickle_able_copy() for player in players]
+        for player in players:
+            player.unsent_message = ""
         for i in range(len(players)):
             if type(players[i]) == Player and players[i].ready:
                 try:
-                    players[i].conn.send(dumps('<' + answer + ',' + str(players[i].table_number) + '>'))
+                    players[i].conn.send(dumps(pickle_able_players))
                     players[i].errors = 0
                 except (Exception,):
                     players[i].errors += 1

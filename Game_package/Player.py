@@ -6,8 +6,8 @@ class Player:
         self.y = y
         self.table_number = -1
         self.desired_table_number = 0
-
         self.name = name
+        self.unsent_message = ""
         self.errors = 0
         self.dead = 0
         self.ready = False
@@ -28,6 +28,19 @@ class Player:
             v = (v[0] / len_v, v[1] / len_v)
             v = (v[0] * self.abs_speed, v[1] * self.abs_speed)
             self.speed_x, self.speed_y = v[0], v[1]
+
+    def pickle_able_copy(self):
+        pickle_able_player = Player(None, None, self.x, self.y, self.name)
+        pickle_able_player.table_number = self.table_number
+        pickle_able_player.desired_table_number = self.desired_table_number
+        pickle_able_player.unsent_message = self.unsent_message
+        pickle_able_player.errors = self.errors
+        pickle_able_player.dead = self.dead
+        pickle_able_player.ready = self.ready
+        pickle_able_player.abs_speed = self.abs_speed
+        pickle_able_player.speed_x = self.speed_x
+        pickle_able_player.speed_y = self.speed_y
+        return pickle_able_player
 
 
 class Bot(Player):

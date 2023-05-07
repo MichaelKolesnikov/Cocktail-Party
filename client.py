@@ -1,10 +1,10 @@
-import threading
-
 from config import get_server_data, RADIUS, WIDTH_ROOM, HEIGHT_ROOM
 
 import socket
+import threading
 import pygame
 from pickle import dumps, loads
+from Game_package import Player
 
 
 def find(s) -> str:
@@ -34,9 +34,9 @@ def get_ready_socket_with_name() -> tuple[socket.socket | None, str]:
             print("Trying to connect to a local server failed")
             return None, ""
 
-    name = sock.recv(1024).decode()
+    name = loads(sock.recv(1024))
 
-    if sock.recv(64).decode() != '!':
+    if loads(sock.recv(64)) != '!':
         print("No acknowledgement signal received")
         sock.close()
         exit()
@@ -82,16 +82,10 @@ def write_name(screen, x, y, r, name):
     screen.blit(text, rect)
 
 
-def draw_players(screen, data_, colour: tuple[int, int, int]):
-    for ind in range(len(data_)):
-        j = data_[ind].split(' ')
-
-        x = int(j[0])
-        y = int(j[1])
-        pygame.draw.circle(screen, colour, (x, y), RADIUS)
-
-        if len(j) == 3:
-            write_name(screen, x, y, RADIUS, j[2])
+def draw_players(screen, players, colour: tuple[int, int, int]):
+    for player in players:
+        pygame.draw.circle(screen, colour, (player.x, player.y), RADIUS)
+        write_name(screen, player.x, player.y, RADIUS, player.name)
 
 
 def main():
@@ -119,7 +113,6 @@ def main():
         while True:
             message = input()
             if message and table_number == desired_table_number and message_forming:
-                talk.append(message)
                 unsent_message = message
 
     threading.Thread(target=input_from_console).start()
@@ -138,38 +131,39 @@ def main():
 
         message_to_server = {"unsent_message": "",
                              "desired_table_number": desired_table_number}
-        if unsent_message and message_forming:
+        if message_forming:
             message_to_server["unsent_message"] = unsent_message
-            unsent_message = ""
+        unsent_message = ""
 
         if table_number != desired_table_number:
             message_forming = False
             table_number = missing_table
         my_socket.send(dumps(message_to_server))
         message_to_server["unsent_message"] = ""
-
         # getting new game state
         try:
-            data = loads(my_socket.recv(2 ** 15))
+            players: list[Player] = loads(my_socket.recv(2 ** 20))
         except (Exception,):
             running = False
             continue
-        data = find(data)
-        data = data.split(',')
-        if data != ['']:
-            silver = (192, 192, 192)
-            grid.fill(silver)
-            grid.draw(background)
-            draw_players(screen, data[:-1], colour)
-            grid.show_messages(talk)
+        silver = (192, 192, 192)
+        grid.fill(silver)
+        grid.draw(background)
+        draw_players(screen, players, colour)
+        for player in players:
+            if player.table_number == table_number and table_number > 0 and player.unsent_message:
+                talk.append(f"{player.name}: {player.unsent_message}")
+        grid.show_messages(talk)
 
-            table_number = int(data[-1])
-            if table_number == desired_table_number and table_number != 0:
-                if not message_forming:
-                    message_forming = True
-                    print(f"You come to table {table_number} and you can talk")
-            else:
-                message_forming = False
+        for player in players:
+            if player.name == my_name:
+                table_number = player.table_number
+        if table_number == desired_table_number and table_number > 0:
+            if not message_forming:
+                message_forming = True
+                print(f"You come to table {table_number} and you can talk")
+        else:
+            message_forming = False
 
         pygame.display.update()
 
