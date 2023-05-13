@@ -66,7 +66,7 @@ class Grid:
         self.screen.fill(color)
 
     def show_messages(self, talk):
-        for num_phrase, phrase in enumerate(talk[-10:]):
+        for num_phrase, phrase in enumerate(talk):
             black = (0, 0, 0)
             white = (255, 255, 255)
             font_obj = pygame.font.Font('freesansbold.ttf', 20)
@@ -75,20 +75,21 @@ class Grid:
             self.screen.blit(text_surface_obj, (WIDTH_ROOM + 40, num_phrase * 20))
 
 
-def write_name(screen, x, y, r, name):
-    font = pygame.font.Font(None, r)
-    text = font.render(name, True, (0, 0, 0))
-    rect = text.get_rect(center=(x, y))
-    screen.blit(text, rect)
-
-
 def draw_players(screen, players, colour: tuple[int, int, int]):
+    def write_name(x, y, r, name):
+        nonlocal screen
+        font = pygame.font.Font(None, r)
+        text = font.render(name, True, (0, 0, 0))
+        rect = text.get_rect(center=(x, y))
+        screen.blit(text, rect)
+
     for player in players:
         pygame.draw.circle(screen, colour, (player.x, player.y), RADIUS)
-        write_name(screen, player.x, player.y, RADIUS, player.name)
+        write_name(player.x, player.y, RADIUS, player.name)
 
 
 def main():
+    running = True
     talk: list[str] = []
     message: str = ""
     unsent_message: str = ""
@@ -110,7 +111,7 @@ def main():
 
     def input_from_console():
         nonlocal talk, message, unsent_message
-        while True:
+        while running:
             message = input()
             if message and table_number == desired_table_number and message_forming:
                 unsent_message = message
@@ -118,7 +119,6 @@ def main():
     threading.Thread(target=input_from_console).start()
 
     message_forming = False
-    running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -153,7 +153,7 @@ def main():
         for player in players:
             if player.table_number == table_number and table_number > 0 and player.unsent_message:
                 talk.append(f"{player.name}: {player.unsent_message}")
-        grid.show_messages(talk)
+        grid.show_messages(talk[-30:])
 
         for player in players:
             if player.name == my_name:
@@ -168,6 +168,7 @@ def main():
         pygame.display.update()
 
     pygame.quit()
+    print("Type something into the console and it will close")
 
 
 if __name__ == "__main__":

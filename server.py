@@ -94,11 +94,6 @@ def main():
     ready_socket = get_ready_socket()
 
     players: list[Player | Bot] = []
-    # players = [Bot(None, None,
-    #                random.randint(0, WIDTH_ROOM),
-    #                random.randint(0, HEIGHT_ROOM),
-    #                get_not_taken_name())
-    #            for i in range(BOTS_QUANTITY)]
 
     tick = -1
     server_works = True

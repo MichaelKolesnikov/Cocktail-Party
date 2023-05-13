@@ -1,2 +1,4 @@
-pygame==2.3.0
+pygame==2.4.0
 python-dotenv==1.0.0
+
+openai==0.27.6
