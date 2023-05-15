@@ -107,6 +107,7 @@ def main():
         # receiving messages from all players
         for player in players:
             if type(player) == Player:
+                player.verification = False
                 try:
                     data: dict = loads(player.conn.recv(1024))
                     if "!" in data:  # confirm connection
@@ -117,8 +118,9 @@ def main():
                             if tables[desired_table_number].are_empty_places():
                                 player.desired_table_number = desired_table_number
                         if data.get("unsent_message"):
-                            unsent_message = data.get("unsent_message")
+                            unsent_message = data["unsent_message"]
                             player.unsent_message = unsent_message
+                            player.verification = True
                 except (Exception,):
                     pass
             update(player)

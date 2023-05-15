@@ -14,6 +14,7 @@ class Player:
         self.abs_speed = 5
         self.speed_x = 0
         self.speed_y = 0
+        self.verification = False
 
     def set_options(self, data_):
         data_ = data_[1:-1].split(' ')
@@ -40,6 +41,7 @@ class Player:
         pickle_able_player.abs_speed = self.abs_speed
         pickle_able_player.speed_x = self.speed_x
         pickle_able_player.speed_y = self.speed_y
+        pickle_able_player.verification = self.verification
         return pickle_able_player
 
 
