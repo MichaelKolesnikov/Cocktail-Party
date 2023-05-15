@@ -7,7 +7,7 @@ from pickle import loads, dumps
 
 from Game_package import Table, Place
 from Game_package import get_not_taken_name, free_name
-from Game_package import Player, Bot
+from Game_package import Player
 
 
 tables = [
@@ -77,23 +77,10 @@ def update(player_: Player):
     player_.y = int(player_.y)
 
 
-def find(s):
-    opened = None
-    for i in range(len(s)):
-        if s[i] == '<':
-            opened = i
-        if s[i] == '>' and opened is not None:
-            closed = i
-            res = s[opened + 1:closed]
-            res = list(map(int, res.split(',')))
-            return res
-    return ''
-
-
 def main():
     ready_socket = get_ready_socket()
 
-    players: list[Player | Bot] = []
+    players: list[Player] = []
 
     tick = -1
     server_works = True
@@ -134,10 +121,6 @@ def main():
                             player.unsent_message = unsent_message
                 except (Exception,):
                     pass
-            elif type(player) == Bot:
-                desired_table_number = find(player.send_command())[0]
-                if tables[desired_table_number].are_empty_places():
-                    player.desired_table_number = desired_table_number
             update(player)
 
         # sending new game state
@@ -151,8 +134,6 @@ def main():
                     players[i].errors = 0
                 except (Exception,):
                     players[i].errors += 1
-            elif type(players[i]) == Bot:
-                players[i].get_game_state([player.table_number for player in players])
 
         # clearing the list of disconnected clients
         for player in players:

@@ -43,6 +43,7 @@ class Player:
         return pickle_able_player
 
 
+'''
 class Bot(Player):
     count_gamers = 6
 
@@ -75,3 +76,4 @@ class Bot(Player):
         elif len(game_state) > self.count_gamers:
             game_state = game_state[:self.count_gamers]
         self.game_state = game_state
+'''

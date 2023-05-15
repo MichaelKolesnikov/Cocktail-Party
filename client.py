@@ -7,18 +7,6 @@ from pickle import dumps, loads
 from Game_package import Player
 
 
-def find(s) -> str:
-    opened = None
-    for ind in range(len(s)):
-        if s[ind] == '<':
-            opened = ind
-        if s[ind] == '>' and opened is not None:
-            closed = ind
-            res = s[opened + 1:closed]
-            return res
-    return ''
-
-
 def get_ready_socket_with_name() -> tuple[socket.socket | None, str]:
     server_ip, port = get_server_data()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -138,7 +126,7 @@ def main():
         if table_number != desired_table_number:
             message_forming = False
             table_number = missing_table
-        my_socket.send(dumps(message_to_server))
+        my_socket.sendall(dumps(message_to_server))
         message_to_server["unsent_message"] = ""
         # getting new game state
         try:
